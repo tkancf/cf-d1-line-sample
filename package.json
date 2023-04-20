@@ -12,6 +12,7 @@
   "scripts": {
     "start": "wrangler dev",
     "deploy": "wrangler publish",
+    "tail": "wrangler tail",
     "test": "vitest"
   },
   "dependencies": {
