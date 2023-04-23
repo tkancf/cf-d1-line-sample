@@ -5,13 +5,38 @@ import {
 } from "@line/bot-sdk";
 import { Hono } from "hono";
 
-const app = new Hono();
+interface Env extends Record<string, any> {
+  DB: D1Database;
+}
+
+const app = new Hono<{ Bindings: Env }>();
+
 app.get("*", (c) => c.text("Hello World!"));
+
+type ShoppingItem = {
+  id: number;
+  item: string;
+  added_at: string;
+};
+
+app.get("/api/select-test", async (c) => {
+  const stmt = await c.env.DB.prepare(`SELECT * FROM shopping_list;`);
+  const allResults: D1Result<ShoppingItem> = await stmt.all();
+
+  if (!allResults.results) {
+    // undefiled result
+    return c.json({ message: "no results" });
+  }
+
+  const results: { results: ShoppingItem[] } = {
+    results: allResults.results || [],
+  };
+  return c.json(results);
+});
 
 app.post("/api/webhook", async (c) => {
   const data = await c.req.json();
   const events: WebhookEvent[] = (data as any).events;
-  // @ts-ignore アクセストークンが読めずにエラーになるが、実環境では読めるので無視する
   const accessToken: string = c.env.CHANNEL_ACCESS_TOKEN;
 
   await Promise.all(

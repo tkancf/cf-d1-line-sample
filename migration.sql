@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS shopping_list;
+CREATE TABLE shopping_list (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  item TEXT NOT NULL,
+  added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+INSERT INTO shopping_list (item) VALUES ('milk');
