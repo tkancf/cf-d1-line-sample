@@ -4,10 +4,12 @@ import {
   WebhookEvent,
 } from "@line/bot-sdk";
 import { Hono } from "hono";
+import { Env as BaseEnv } from "hono/dist/types/types";
 
-interface Env extends Record<string, any> {
+type Env = BaseEnv & {
+  CHANNEL_ACCESS_TOKEN: string;
   DB: D1Database;
-}
+};
 
 const app = new Hono<{ Bindings: Env }>();
 
