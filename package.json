@@ -11,6 +11,7 @@
   "private": true,
   "scripts": {
     "start": "wrangler dev",
+    "dev": "wrangler dev --local --persist",
     "deploy": "wrangler publish",
     "tail": "wrangler tail",
     "test": "vitest"
