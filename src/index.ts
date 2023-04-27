@@ -34,6 +34,17 @@ app.get("/api/select-test", async (c) => {
   return c.json(results);
 });
 
+app.post("/api/insert-test", async (c) => {
+  const data = await c.req.json();
+  const item = data.item;
+  console.log(item);
+  const stmt = await c.env.DB.prepare(
+    `INSERT INTO shopping_list (item) VALUES (?);`
+  ).bind(item);
+  const result = await stmt.run();
+  return c.json(result);
+});
+
 app.post("/api/webhook", async (c) => {
   const data = await c.req.json();
   const events: WebhookEvent[] = (data as any).events;
