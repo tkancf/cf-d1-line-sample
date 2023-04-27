@@ -11,8 +11,6 @@ interface Env extends Record<string, any> {
 
 const app = new Hono<{ Bindings: Env }>();
 
-app.get("*", (c) => c.text("Hello World!"));
-
 type ShoppingItem = {
   id: number;
   item: string;
