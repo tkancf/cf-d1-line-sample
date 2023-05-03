@@ -1,8 +1,4 @@
-import {
-  MessageAPIResponseBase,
-  TextMessage,
-  WebhookEvent,
-} from "@line/bot-sdk";
+import { TextMessage, WebhookEvent } from "@line/bot-sdk";
 import { Hono } from "hono";
 import { Env as BaseEnv } from "hono/dist/types/types";
 
@@ -53,7 +49,27 @@ app.post("/api/webhook", async (c) => {
   await Promise.all(
     events.map(async (event: WebhookEvent) => {
       try {
-        await textEventHandler(event, accessToken);
+        if (event.type !== "message" || event.message.type !== "text") {
+          return;
+        }
+
+        const { replyToken } = event;
+        const { text } = event.message;
+        const response: TextMessage = {
+          type: "text",
+          text,
+        };
+        await fetch("https://api.line.me/v2/bot/message/reply", {
+          body: JSON.stringify({
+            replyToken: replyToken,
+            messages: [response],
+          }),
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        });
       } catch (err: unknown) {
         if (err instanceof Error) {
           console.error(err);
@@ -66,32 +82,5 @@ app.post("/api/webhook", async (c) => {
   );
   return c.json({ message: "ok" });
 });
-
-const textEventHandler = async (
-  event: WebhookEvent,
-  accessToken: string
-): Promise<MessageAPIResponseBase | undefined> => {
-  if (event.type !== "message" || event.message.type !== "text") {
-    return;
-  }
-
-  const { replyToken } = event;
-  const { text } = event.message;
-  const response: TextMessage = {
-    type: "text",
-    text,
-  };
-  await fetch("https://api.line.me/v2/bot/message/reply", {
-    body: JSON.stringify({
-      replyToken: replyToken,
-      messages: [response],
-    }),
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-  });
-};
 
 export default app;
