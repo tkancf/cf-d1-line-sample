@@ -1,6 +1,7 @@
 import { TextMessage, WebhookEvent } from "@line/bot-sdk";
 import { Hono } from "hono";
 import { Env as BaseEnv } from "hono/dist/types/types";
+import { Line } from "./line";
 
 type Env = BaseEnv & {
   CHANNEL_ACCESS_TOKEN: string;
@@ -44,7 +45,6 @@ app.post("/api/insert-test", async (c) => {
 app.post("/api/webhook", async (c) => {
   const data = await c.req.json();
   const events: WebhookEvent[] = (data as any).events;
-  const accessToken: string = c.env.CHANNEL_ACCESS_TOKEN;
   const event = events
     .map((event: WebhookEvent) => {
       if (event.type != "message" || event.message.type != "text") {
@@ -79,11 +79,10 @@ app.post("/api/webhook", async (c) => {
       })
       .join("\n");
     // LINEに返信する
-    const client = new LineClient(accessToken);
-    client.replyMessage(replyToken, message);
-    return c.json({ message: "ok" });
+    const client = new Line(c.env.CHANNEL_ACCESS_TOKEN);
+    await client.replyMessage(message, replyToken);
+    return c.json({ message: "LINE 一覧" });
   }
-
   return c.json({ message: "ok" });
 });
 
