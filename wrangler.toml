@@ -1,0 +1,8 @@
+name = "cf-d1-line-sample"
+main = "src/index.ts"
+compatibility_date = "2023-04-17"
+
+[[ d1_databases ]]
+binding = "DB" # i.e. available in your Worker on env.DB
+database_name = "cf-d1-line-sample-db"
+database_id = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"

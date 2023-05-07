@@ -59,21 +59,48 @@ app.post("/api/webhook", async (c) => {
   }
   const { replyToken } = event;
   const { text } = event.message as TextMessage;
+  const client = new Line(c.env.CHANNEL_ACCESS_TOKEN);
 
-  // textの内容が「一覧」の場合、DBからデータを取得して返す
   if (text === "一覧") {
     const message: string = await fetchAllItems(c);
-    // LINEに返信する
-    const client = new Line(c.env.CHANNEL_ACCESS_TOKEN);
-    await client.replyMessage(message, replyToken);
+    // messageの内容がからの場合、「内容がないよう」と返信する
+    if (!message) {
+      await client.replyMessage("内容がないよう", replyToken);
+    } else {
+      await client.replyMessage(message, replyToken);
+    }
     return c.json({ message: "LINE 一覧" });
+  } else if (text.startsWith("追加")) {
+    const items = text.replace("追加", "").split("\n");
+    for (const item of items) {
+      if (!item) {
+        continue;
+      }
+      const stmt = await c.env.DB.prepare(
+        `INSERT INTO shopping_list (item) VALUES (?);`
+      ).bind(item);
+      await stmt.run();
+    }
+    await client.replyMessage("追加しました", replyToken);
+    return c.json({ message: "LINE 追加" });
+  } else if (text.startsWith("削除")) {
+    const item = text.replace("削除", "");
+    const stmt = await c.env.DB.prepare(
+      `DELETE FROM shopping_list WHERE item = ?;`
+    ).bind(item);
+    await stmt.run();
+    await client.replyMessage("削除しました", replyToken);
+    return c.json({ message: "LINE 削除" });
+  } else if (text === "全てを削除してください" || text === "全てを削除") {
+    const stmt = await c.env.DB.prepare(`DELETE FROM shopping_list;`);
+    await stmt.run();
+    await client.replyMessage("全て削除しました", replyToken);
+    return c.json({ message: "LINE 全てを削除してください" });
   }
   return c.json({ message: "ok" });
 });
 
-const fetchAllItems = async (c: any) => {
-  const stmt = await c.env.DB.prepare(`SELECT * FROM shopping_list;`);
-  const allResults: D1Result<ShoppingItem> = await stmt.all();
+const convertResultToMessage = (allResults: D1Result<ShoppingItem>): string => {
   if (!allResults.results) {
     // undefiled result
     console.log("message: ", "no results");
@@ -88,6 +115,20 @@ const fetchAllItems = async (c: any) => {
       return `${result.id}: ${result.item}`;
     })
     .join("\n");
+  return message;
+};
+
+const fetchAllItems = async (c: any) => {
+  const stmt = await c.env.DB.prepare(`SELECT * FROM shopping_list;`);
+  const allResults: D1Result<ShoppingItem> = await stmt.all();
+  // allResultsのIDを1からの連番へ変換する
+  if (allResults.results) {
+    allResults.results = allResults.results.map((result, index) => {
+      result.id = index + 1;
+      return result;
+    });
+  }
+  const message = convertResultToMessage(allResults);
   return message;
 };
 
