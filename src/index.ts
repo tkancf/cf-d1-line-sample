@@ -60,24 +60,9 @@ app.post("/api/webhook", async (c) => {
   const { replyToken } = event;
   const { text } = event.message as TextMessage;
 
-  // textの内容が「一覧」の場合、DBからデータを取得して、番号を日付順につけて返す
+  // textの内容が「一覧」の場合、DBからデータを取得して返す
   if (text === "一覧") {
-    const stmt = await c.env.DB.prepare(`SELECT * FROM shopping_list;`);
-    const allResults: D1Result<ShoppingItem> = await stmt.all();
-    if (!allResults.results) {
-      // undefiled result
-      return c.json({ message: "no results" });
-    }
-
-    const results: { results: ShoppingItem[] } = {
-      results: allResults.results || [],
-    };
-    // convert results to string
-    const message: string = results.results
-      .map((result) => {
-        return `${result.id}: ${result.item}`;
-      })
-      .join("\n");
+    const message: string = await fetchAllItems(c);
     // LINEに返信する
     const client = new Line(c.env.CHANNEL_ACCESS_TOKEN);
     await client.replyMessage(message, replyToken);
@@ -85,5 +70,25 @@ app.post("/api/webhook", async (c) => {
   }
   return c.json({ message: "ok" });
 });
+
+const fetchAllItems = async (c: any) => {
+  const stmt = await c.env.DB.prepare(`SELECT * FROM shopping_list;`);
+  const allResults: D1Result<ShoppingItem> = await stmt.all();
+  if (!allResults.results) {
+    // undefiled result
+    console.log("message: ", "no results");
+  }
+
+  const results: { results: ShoppingItem[] } = {
+    results: allResults.results || [],
+  };
+  // convert results to string
+  const message: string = results.results
+    .map((result) => {
+      return `${result.id}: ${result.item}`;
+    })
+    .join("\n");
+  return message;
+};
 
 export default app;
